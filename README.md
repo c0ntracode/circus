@@ -15,7 +15,9 @@ These problems date back to Leonhard Euler's famous 1736 solution to the Seven B
 
 ## Play
 
-Open `index.html` in a browser. ES6 modules require a local server:
+**Easiest way:** Open `circus-standalone.html` directly in your browser. No server needed.
+
+**For development:** Use `index.html` with a local server (ES6 modules require this):
 
 ```bash
 # Python
@@ -54,14 +56,24 @@ Then visit `localhost:8000`.
 
 ```
 circus/
-├── index.html      # Main page
-├── style.css       # Styles
+├── index.html              # Main page (needs server)
+├── circus-standalone.html  # Single-file version (no server)
+├── build.py                # Regenerates standalone from source
+├── style.css
 └── js/
-    ├── main.js     # Entry point
-    ├── graph.js    # Graph data structure
-    ├── renderer.js # Canvas rendering
-    ├── game.js     # Game state and logic
-    └── levels.js   # Puzzle definitions
+    ├── main.js             # Entry point
+    ├── graph.js            # Graph data structure
+    ├── renderer.js         # Canvas rendering
+    ├── game.js             # Game state and logic
+    └── levels.js           # Puzzle definitions
+```
+
+## Building
+
+After editing the source files, regenerate the standalone version:
+
+```bash
+python build.py
 ```
 
 ## License
