@@ -1,0 +1,69 @@
+# Circus
+
+A browser-based puzzle game about graph circuits from discrete mathematics.
+
+Born from a silly idea during a discrete math course and brought to life with [Claude Code](https://claude.ai/code).
+
+## What is it?
+
+Circus challenges you to trace paths through graphs, solving two classic problems:
+
+- **Euler Circuits** — traverse every *edge* exactly once and return to where you started
+- **Hamilton Circuits** — visit every *node* exactly once and return to where you started
+
+These problems date back to Leonhard Euler's famous 1736 solution to the Seven Bridges of Königsberg, considered the first theorem of graph theory.
+
+## Play
+
+Open `index.html` in a browser. ES6 modules require a local server:
+
+```bash
+# Python
+python -m http.server 8000
+
+# Node
+npx serve
+
+# VS Code
+# Use the "Live Server" extension
+```
+
+Then visit `localhost:8000`.
+
+## Controls
+
+| Input | Action |
+|-------|--------|
+| Click | Select nodes to build your path |
+| Undo Last | Remove the last node from your path |
+| Reset Path | Start over on the current level |
+| Hint | Get help (disabled when circuit is complete) |
+| R | Reset current level |
+| H | Show hint |
+| Ctrl+Z | Undo last move |
+| Arrow keys | Navigate between levels |
+
+## Tech
+
+- Vanilla HTML, CSS, JavaScript
+- HTML5 Canvas for rendering
+- ES6 modules
+- No build tools or dependencies
+
+## Project Structure
+
+```
+circus/
+├── index.html      # Main page
+├── style.css       # Styles
+└── js/
+    ├── main.js     # Entry point
+    ├── graph.js    # Graph data structure
+    ├── renderer.js # Canvas rendering
+    ├── game.js     # Game state and logic
+    └── levels.js   # Puzzle definitions
+```
+
+## License
+
+MIT
