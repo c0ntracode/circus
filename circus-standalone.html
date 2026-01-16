@@ -188,6 +188,7 @@ header h1 {
     color: #667eea;
 }
 
+/* Responsive */
 @media (max-width: 600px) {
     .container {
         padding: 15px;
@@ -210,6 +211,7 @@ header h1 {
         font-size: 0.9rem;
     }
 }
+
     </style>
 </head>
 <body>
@@ -248,12 +250,16 @@ header h1 {
     </div>
 
     <script>
+
 // ============ GRAPH ============
+/**
+ * Graph data structure for circuit puzzles
+ */
 class Graph {
     constructor() {
-        this.nodes = new Map();
-        this.edges = [];
-        this.adjacency = new Map();
+        this.nodes = new Map(); // id -> {x, y, label}
+        this.edges = [];        // [{from, to}]
+        this.adjacency = new Map(); // id -> Set of neighbor ids
     }
 
     addNode(id, x, y, label = null) {
@@ -265,6 +271,7 @@ class Graph {
     }
 
     addEdge(from, to) {
+        // Undirected graph - add both directions
         this.edges.push({ from, to });
         this.adjacency.get(from).add(to);
         this.adjacency.get(to).add(from);
@@ -287,8 +294,13 @@ class Graph {
         return this.edges.length;
     }
 
+    /**
+     * Check if an Euler circuit exists.
+     * An Euler circuit exists iff the graph is connected and every vertex has even degree.
+     */
     hasEulerCircuit() {
         if (!this.isConnected()) return false;
+
         for (const [nodeId] of this.nodes) {
             if (this.getDegree(nodeId) % 2 !== 0) {
                 return false;
@@ -297,98 +309,157 @@ class Graph {
         return true;
     }
 
+    /**
+     * Check if graph is connected using BFS
+     */
     isConnected() {
         if (this.nodes.size === 0) return true;
+
         const visited = new Set();
         const queue = [this.nodes.keys().next().value];
+
         while (queue.length > 0) {
             const current = queue.shift();
             if (visited.has(current)) continue;
             visited.add(current);
+
             for (const neighbor of this.getNeighbors(current)) {
                 if (!visited.has(neighbor)) {
                     queue.push(neighbor);
                 }
             }
         }
+
         return visited.size === this.nodes.size;
     }
 
+    /**
+     * Validate if a path is a valid Euler circuit
+     */
     isValidEulerCircuit(path) {
         if (path.length !== this.edges.length + 1) return false;
         if (path[0] !== path[path.length - 1]) return false;
+
+        // Track edge usage
         const edgeUsage = new Map();
         for (const edge of this.edges) {
             const key = this.edgeKey(edge.from, edge.to);
             edgeUsage.set(key, (edgeUsage.get(key) || 0) + 1);
         }
+
+        // Check each step uses a valid edge exactly once
         for (let i = 0; i < path.length - 1; i++) {
             const key = this.edgeKey(path[i], path[i + 1]);
             const count = edgeUsage.get(key) || 0;
             if (count <= 0) return false;
             edgeUsage.set(key, count - 1);
         }
+
+        // All edges should be used
         for (const count of edgeUsage.values()) {
             if (count !== 0) return false;
         }
+
         return true;
     }
 
+    /**
+     * Validate if a path is a valid Hamilton circuit
+     */
     isValidHamiltonCircuit(path) {
         if (path.length !== this.nodes.size + 1) return false;
         if (path[0] !== path[path.length - 1]) return false;
+
+        // Check all nodes visited exactly once (except start/end)
         const visited = new Set();
         for (let i = 0; i < path.length - 1; i++) {
             if (visited.has(path[i])) return false;
             visited.add(path[i]);
         }
+
         if (visited.size !== this.nodes.size) return false;
+
+        // Check all edges in path are valid
         for (let i = 0; i < path.length - 1; i++) {
             if (!this.getNeighbors(path[i]).has(path[i + 1])) {
                 return false;
             }
         }
+
         return true;
     }
 
+    /**
+     * Create a unique key for an edge (order-independent)
+     */
     edgeKey(a, b) {
         return a < b ? `${a}-${b}` : `${b}-${a}`;
     }
 
+    /**
+     * Check if two nodes are connected by an edge
+     */
     hasEdge(from, to) {
         return this.getNeighbors(from).has(to);
     }
 
+    /**
+     * Get all edges from a node
+     */
     getEdgesFrom(nodeId) {
         return this.edges.filter(e => e.from === nodeId || e.to === nodeId);
     }
 }
 
+/**
+ * Create a graph from a level definition
+ */
 function createGraphFromLevel(level) {
     const graph = new Graph();
+
     for (const node of level.nodes) {
         graph.addNode(node.id, node.x, node.y, node.label);
     }
+
     for (const edge of level.edges) {
         graph.addEdge(edge[0], edge[1]);
     }
+
     return graph;
 }
 
 // ============ LEVELS ============
+/**
+ * Level definitions for circuit puzzles
+ *
+ * Each level has:
+ * - id: unique identifier
+ * - name: display name
+ * - type: 'euler' or 'hamilton'
+ * - nodes: array of {id, x, y, label?}
+ * - edges: array of [fromId, toId]
+ */
+
 const levels = [
+    // === EULER CIRCUITS ===
     {
-        id: 1, name: "Triangle", type: "euler",
+        id: 1,
+        name: "Triangle",
+        type: "euler",
         description: "A simple triangle - the easiest Euler circuit.",
         nodes: [
             { id: 0, x: 2, y: 0, label: "A" },
             { id: 1, x: 0, y: 3, label: "B" },
             { id: 2, x: 4, y: 3, label: "C" }
         ],
-        edges: [[0, 1], [1, 2], [2, 0]]
+        edges: [
+            [0, 1], [1, 2], [2, 0]
+        ]
     },
     {
-        id: 2, name: "Square", type: "euler",
+        id: 2,
+        name: "Square",
+        type: "euler",
         description: "A square has 4 vertices of degree 2.",
         nodes: [
             { id: 0, x: 0, y: 0, label: "A" },
@@ -396,10 +467,14 @@ const levels = [
             { id: 2, x: 3, y: 3, label: "C" },
             { id: 3, x: 0, y: 3, label: "D" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 0]]
+        edges: [
+            [0, 1], [1, 2], [2, 3], [3, 0]
+        ]
     },
     {
-        id: 3, name: "Bowtie", type: "euler",
+        id: 3,
+        name: "Bowtie",
+        type: "euler",
         description: "Two triangles sharing a vertex. The center has degree 4.",
         nodes: [
             { id: 0, x: 0, y: 1, label: "A" },
@@ -408,10 +483,15 @@ const levels = [
             { id: 3, x: 4, y: 1, label: "D" },
             { id: 4, x: 4, y: 3, label: "E" }
         ],
-        edges: [[0, 1], [1, 2], [2, 0], [2, 3], [3, 4], [4, 2]]
+        edges: [
+            [0, 1], [1, 2], [2, 0],
+            [2, 3], [3, 4], [4, 2]
+        ]
     },
     {
-        id: 4, name: "Crystal", type: "euler",
+        id: 4,
+        name: "Crystal",
+        type: "euler",
         description: "A triangular prism with face diagonals. All vertices have degree 4.",
         nodes: [
             { id: 0, x: 1, y: 0, label: "A" },
@@ -421,10 +501,21 @@ const levels = [
             { id: 4, x: 3, y: 3.5, label: "E" },
             { id: 5, x: 2, y: 2, label: "F" }
         ],
-        edges: [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5], [0, 4], [1, 5], [2, 3]]
+        edges: [
+            // Top triangle
+            [0, 1], [1, 2], [2, 0],
+            // Bottom triangle
+            [3, 4], [4, 5], [5, 3],
+            // Vertical edges
+            [0, 3], [1, 4], [2, 5],
+            // Face diagonals (to make all degrees 4)
+            [0, 4], [1, 5], [2, 3]
+        ]
     },
     {
-        id: 5, name: "Complete K5", type: "euler",
+        id: 5,
+        name: "Complete K5",
+        type: "euler",
         description: "Complete graph on 5 vertices. Every vertex has degree 4.",
         nodes: [
             { id: 0, x: 2, y: 0, label: "A" },
@@ -433,10 +524,19 @@ const levels = [
             { id: 3, x: 0.8, y: 3.5, label: "D" },
             { id: 4, x: 0, y: 1.5, label: "E" }
         ],
-        edges: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
+        edges: [
+            [0, 1], [0, 2], [0, 3], [0, 4],
+            [1, 2], [1, 3], [1, 4],
+            [2, 3], [2, 4],
+            [3, 4]
+        ]
     },
+
+    // === HAMILTON CIRCUITS ===
     {
-        id: 6, name: "Simple Square", type: "hamilton",
+        id: 6,
+        name: "Simple Square",
+        type: "hamilton",
         description: "Visit every vertex exactly once and return home.",
         nodes: [
             { id: 0, x: 0, y: 0, label: "A" },
@@ -444,10 +544,14 @@ const levels = [
             { id: 2, x: 3, y: 3, label: "C" },
             { id: 3, x: 0, y: 3, label: "D" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 0]]
+        edges: [
+            [0, 1], [1, 2], [2, 3], [3, 0]
+        ]
     },
     {
-        id: 7, name: "Pentagon", type: "hamilton",
+        id: 7,
+        name: "Pentagon",
+        type: "hamilton",
         description: "A 5-vertex cycle - find the Hamilton circuit.",
         nodes: [
             { id: 0, x: 2, y: 0, label: "A" },
@@ -456,10 +560,14 @@ const levels = [
             { id: 3, x: 0.8, y: 3.5, label: "D" },
             { id: 4, x: 0, y: 1.5, label: "E" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]]
+        edges: [
+            [0, 1], [1, 2], [2, 3], [3, 4], [4, 0]
+        ]
     },
     {
-        id: 8, name: "Petersen's Challenge", type: "hamilton",
+        id: 8,
+        name: "Petersen's Challenge",
+        type: "hamilton",
         description: "A graph with extra edges. Find the right path!",
         nodes: [
             { id: 0, x: 0, y: 0, label: "A" },
@@ -468,10 +576,15 @@ const levels = [
             { id: 3, x: 1.5, y: 4, label: "D" },
             { id: 4, x: -1, y: 2, label: "E" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [0, 2], [1, 3]]
+        edges: [
+            [0, 1], [1, 2], [2, 3], [3, 4], [4, 0],
+            [0, 2], [1, 3]
+        ]
     },
     {
-        id: 9, name: "Hexagon Plus", type: "hamilton",
+        id: 9,
+        name: "Hexagon Plus",
+        type: "hamilton",
         description: "Six vertices with some diagonals. Multiple solutions exist!",
         nodes: [
             { id: 0, x: 1, y: 0, label: "A" },
@@ -481,10 +594,15 @@ const levels = [
             { id: 4, x: 1, y: 3.4, label: "E" },
             { id: 5, x: 0, y: 1.7, label: "F" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [0, 3], [1, 4], [2, 5]]
+        edges: [
+            [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
+            [0, 3], [1, 4], [2, 5]
+        ]
     },
     {
-        id: 10, name: "The Cube", type: "hamilton",
+        id: 10,
+        name: "The Cube",
+        type: "hamilton",
         description: "Vertices and edges of a cube. Find the Hamilton circuit.",
         nodes: [
             { id: 0, x: 0, y: 1, label: "A" },
@@ -496,7 +614,14 @@ const levels = [
             { id: 6, x: 4, y: 2.5, label: "G" },
             { id: 7, x: 1, y: 2.5, label: "H" }
         ],
-        edges: [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
+        edges: [
+            // Front face
+            [0, 1], [1, 2], [2, 3], [3, 0],
+            // Back face
+            [4, 5], [5, 6], [6, 7], [7, 4],
+            // Connecting edges
+            [0, 4], [1, 5], [2, 6], [3, 7]
+        ]
     }
 ];
 
@@ -521,6 +646,9 @@ function getPrevLevel(currentId) {
 }
 
 // ============ RENDERER ============
+/**
+ * Canvas renderer for graph visualization
+ */
 class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
@@ -528,6 +656,8 @@ class Renderer {
         this.scale = 1;
         this.offsetX = 0;
         this.offsetY = 0;
+
+        // Visual settings
         this.nodeRadius = 24;
         this.colors = {
             node: '#667eea',
@@ -541,6 +671,7 @@ class Renderer {
             pathLine: '#f5576c',
             text: '#fff'
         };
+
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
@@ -548,38 +679,58 @@ class Renderer {
     resize() {
         const rect = this.canvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
+
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
+
         this.ctx.scale(dpr, dpr);
+
         this.width = rect.width;
         this.height = rect.height;
     }
 
+    /**
+     * Main render function
+     */
     render(graph, gameState) {
         this.ctx.clearRect(0, 0, this.width, this.height);
+
         if (!graph) return;
+
+        // Calculate transform to fit graph in canvas
         this.calculateTransform(graph);
+
+        // Draw edges first (below nodes)
         this.drawEdges(graph, gameState);
+
+        // Draw the player's current path
         this.drawPath(graph, gameState);
+
+        // Draw nodes on top
         this.drawNodes(graph, gameState);
     }
 
     calculateTransform(graph) {
         if (graph.nodes.size === 0) return;
+
         let minX = Infinity, maxX = -Infinity;
         let minY = Infinity, maxY = -Infinity;
+
         for (const [, node] of graph.nodes) {
             minX = Math.min(minX, node.x);
             maxX = Math.max(maxX, node.x);
             minY = Math.min(minY, node.y);
             maxY = Math.max(maxY, node.y);
         }
+
         const padding = 60;
         const graphWidth = maxX - minX || 1;
         const graphHeight = maxY - minY || 1;
+
         const scaleX = (this.width - padding * 2) / graphWidth;
         const scaleY = (this.height - padding * 2) / graphHeight;
-        this.scale = Math.min(scaleX, scaleY, 80);
+        this.scale = Math.min(scaleX, scaleY, 80); // Cap scale
+
         this.offsetX = (this.width - graphWidth * this.scale) / 2 - minX * this.scale;
         this.offsetY = (this.height - graphHeight * this.scale) / 2 - minY * this.scale;
     }
@@ -591,19 +742,31 @@ class Renderer {
         };
     }
 
+    inverseTransformPoint(screenX, screenY) {
+        return {
+            x: (screenX - this.offsetX) / this.scale,
+            y: (screenY - this.offsetY) / this.scale
+        };
+    }
+
     drawEdges(graph, gameState) {
         const ctx = this.ctx;
+
         for (const edge of graph.edges) {
             const fromNode = graph.nodes.get(edge.from);
             const toNode = graph.nodes.get(edge.to);
             const from = this.transformPoint(fromNode.x, fromNode.y);
             const to = this.transformPoint(toNode.x, toNode.y);
+
+            // Check if edge is used in current path
             const edgeKey = graph.edgeKey(edge.from, edge.to);
             const usedCount = gameState.usedEdges.get(edgeKey) || 0;
             const isHovered = gameState.hoveredEdge === edgeKey;
+
             ctx.beginPath();
             ctx.moveTo(from.x, from.y);
             ctx.lineTo(to.x, to.y);
+
             if (usedCount > 0) {
                 ctx.strokeStyle = this.colors.edgeUsed;
                 ctx.lineWidth = 4;
@@ -614,40 +777,62 @@ class Renderer {
                 ctx.strokeStyle = this.colors.edge;
                 ctx.lineWidth = 2;
             }
+
             ctx.stroke();
+
+            // Draw usage count for multi-edges
+            if (usedCount > 1) {
+                const midX = (from.x + to.x) / 2;
+                const midY = (from.y + to.y) / 2;
+                ctx.fillStyle = this.colors.edgeUsed;
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(usedCount.toString(), midX, midY);
+            }
         }
     }
 
     drawPath(graph, gameState) {
         if (gameState.path.length < 2) return;
+
         const ctx = this.ctx;
         ctx.beginPath();
         ctx.strokeStyle = this.colors.pathLine;
         ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+
         const firstNode = graph.nodes.get(gameState.path[0]);
         const start = this.transformPoint(firstNode.x, firstNode.y);
         ctx.moveTo(start.x, start.y);
+
         for (let i = 1; i < gameState.path.length; i++) {
             const node = graph.nodes.get(gameState.path[i]);
             const point = this.transformPoint(node.x, node.y);
             ctx.lineTo(point.x, point.y);
         }
+
         ctx.stroke();
     }
 
     drawNodes(graph, gameState) {
         const ctx = this.ctx;
+
         for (const [nodeId, node] of graph.nodes) {
             const pos = this.transformPoint(node.x, node.y);
             const isStart = gameState.path.length > 0 && gameState.path[0] === nodeId;
             const isCurrent = gameState.path.length > 0 && gameState.path[gameState.path.length - 1] === nodeId;
             const isHovered = gameState.hoveredNode === nodeId;
             const isValidMove = gameState.validMoves.has(nodeId);
+
+            // Node circle
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, this.nodeRadius, 0, Math.PI * 2);
+
+            // Fill color based on state
             if (isStart && isCurrent && gameState.path.length > 1) {
+                // Back at start - potential completion
                 ctx.fillStyle = '#38ef7d';
             } else if (isCurrent) {
                 ctx.fillStyle = this.colors.nodeCurrent;
@@ -658,10 +843,15 @@ class Renderer {
             } else {
                 ctx.fillStyle = this.colors.node;
             }
+
             ctx.fill();
+
+            // Stroke
             ctx.strokeStyle = isValidMove && !isCurrent ? 'rgba(255,255,255,0.8)' : this.colors.nodeStroke;
             ctx.lineWidth = isValidMove && !isCurrent ? 3 : 2;
             ctx.stroke();
+
+            // Label
             ctx.fillStyle = this.colors.text;
             ctx.font = 'bold 16px sans-serif';
             ctx.textAlign = 'center';
@@ -670,12 +860,16 @@ class Renderer {
         }
     }
 
+    /**
+     * Find node at screen coordinates
+     */
     getNodeAt(screenX, screenY, graph) {
         for (const [nodeId, node] of graph.nodes) {
             const pos = this.transformPoint(node.x, node.y);
             const dx = screenX - pos.x;
             const dy = screenY - pos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
+
             if (distance <= this.nodeRadius + 5) {
                 return nodeId;
             }
@@ -685,6 +879,9 @@ class Renderer {
 }
 
 // ============ GAME ============
+/**
+ * Game state and logic controller
+ */
 class Game {
     constructor() {
         this.graph = null;
@@ -714,41 +911,65 @@ class Game {
 
     reset() {
         this.state = this.createInitialState();
+        // All nodes are valid starting points
         for (const [nodeId] of this.graph.nodes) {
             this.state.validMoves.add(nodeId);
         }
         this.notifyStateChange();
     }
 
+    /**
+     * Handle player clicking on a node
+     */
     selectNode(nodeId) {
         if (this.state.isWon) return false;
+
+        // If no path yet, start from this node
         if (this.state.path.length === 0) {
             this.state.path.push(nodeId);
             this.updateValidMoves();
             this.notifyStateChange();
             return true;
         }
+
+        // Check if this is a valid move
         if (!this.state.validMoves.has(nodeId)) {
             return false;
         }
+
         const currentNode = this.state.path[this.state.path.length - 1];
+
+        // Add to path
         this.state.path.push(nodeId);
+
+        // Mark edge as used
         const edgeKey = this.graph.edgeKey(currentNode, nodeId);
         const currentCount = this.state.usedEdges.get(edgeKey) || 0;
         this.state.usedEdges.set(edgeKey, currentCount + 1);
+
+        // Check for win condition
         this.checkWinCondition();
+
+        // Update valid moves
         this.updateValidMoves();
+
         this.notifyStateChange();
         return true;
     }
 
+    /**
+     * Undo last move
+     */
     undoMove() {
         if (this.state.path.length <= 1) {
             this.reset();
             return;
         }
+
         const removedNode = this.state.path.pop();
         const currentNode = this.state.path[this.state.path.length - 1];
+
+        // Restore edge
         const edgeKey = this.graph.edgeKey(currentNode, removedNode);
         const currentCount = this.state.usedEdges.get(edgeKey) || 0;
         if (currentCount <= 1) {
@@ -756,22 +977,30 @@ class Game {
         } else {
             this.state.usedEdges.set(edgeKey, currentCount - 1);
         }
+
         this.state.isWon = false;
         this.state.isComplete = false;
         this.updateValidMoves();
         this.notifyStateChange();
     }
 
+    /**
+     * Update which nodes are valid moves from current position
+     */
     updateValidMoves() {
         this.state.validMoves.clear();
+
         if (this.state.path.length === 0) {
+            // All nodes are valid starting points
             for (const [nodeId] of this.graph.nodes) {
                 this.state.validMoves.add(nodeId);
             }
             return;
         }
+
         const currentNode = this.state.path[this.state.path.length - 1];
         const neighbors = this.graph.getNeighbors(currentNode);
+
         for (const neighbor of neighbors) {
             if (this.canTraverseEdge(currentNode, neighbor)) {
                 this.state.validMoves.add(neighbor);
@@ -779,38 +1008,60 @@ class Game {
         }
     }
 
+    /**
+     * Check if an edge can still be traversed
+     */
     canTraverseEdge(from, to) {
         const edgeKey = this.graph.edgeKey(from, to);
         const usedCount = this.state.usedEdges.get(edgeKey) || 0;
+
+        // Count how many times this edge appears in the graph
         let totalCount = 0;
         for (const edge of this.graph.edges) {
             if (this.graph.edgeKey(edge.from, edge.to) === edgeKey) {
                 totalCount++;
             }
         }
+
         if (this.level.type === 'euler') {
+            // For Euler circuits, each edge can only be used once
             return usedCount < totalCount;
         } else {
+            // For Hamilton circuits, we just need adjacency
+            // But we can't revisit nodes (except returning to start)
             const startNode = this.state.path[0];
             const visitedNodes = new Set(this.state.path);
+
+            // Can always return to start if we've visited all nodes
             if (to === startNode && visitedNodes.size === this.graph.nodes.size) {
                 return true;
             }
+
+            // Can't revisit other nodes
             return !visitedNodes.has(to);
         }
     }
 
+    /**
+     * Check if player has won
+     */
     checkWinCondition() {
         if (this.state.path.length < 2) return;
+
         const startNode = this.state.path[0];
         const currentNode = this.state.path[this.state.path.length - 1];
+
+        // Must return to start
         if (currentNode !== startNode) return;
+
         let isValid = false;
+
         if (this.level.type === 'euler') {
             isValid = this.graph.isValidEulerCircuit(this.state.path);
         } else if (this.level.type === 'hamilton') {
             isValid = this.graph.isValidHamiltonCircuit(this.state.path);
         }
+
         if (isValid) {
             this.state.isComplete = true;
             this.state.isWon = true;
@@ -821,26 +1072,37 @@ class Game {
         }
     }
 
+    /**
+     * Get a hint for the player
+     */
     getHint() {
         if (this.state.path.length === 0) {
             return "Click any node to start your path.";
         }
+
         if (this.state.validMoves.size === 0) {
             return "No valid moves! Try resetting and taking a different path.";
         }
+
         if (this.level.type === 'euler') {
+            // Fleury's algorithm hint: prefer edges that aren't bridges
+            const currentNode = this.state.path[this.state.path.length - 1];
             const remainingEdges = this.getRemainingEdgeCount();
+
             if (remainingEdges === 1) {
                 return "One edge left! Return to start to complete the circuit.";
             }
+
             return `You have ${remainingEdges} edges left to traverse. Try to avoid getting stuck!`;
         } else {
             const visitedCount = new Set(this.state.path).size;
             const totalNodes = this.graph.nodes.size;
             const remaining = totalNodes - visitedCount;
+
             if (remaining === 0) {
                 return "All nodes visited! Return to start to complete the circuit.";
             }
+
             return `Visit ${remaining} more node${remaining > 1 ? 's' : ''}, then return to start.`;
         }
     }
@@ -867,12 +1129,22 @@ class Game {
 }
 
 // ============ APP ============
+/**
+ * Main entry point for Circus
+ */
+
+
+
+
 class CircusApp {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
         this.renderer = new Renderer(this.canvas);
         this.game = new Game();
+
         this.currentLevelId = 1;
+
+        // DOM elements
         this.levelNumEl = document.getElementById('level-num');
         this.circuitTypeEl = document.getElementById('circuit-type');
         this.instructionsEl = document.getElementById('instructions');
@@ -882,27 +1154,39 @@ class CircusApp {
         this.nextBtn = document.getElementById('next-btn');
         this.hintBtn = document.getElementById('hint-btn');
         this.undoBtn = document.getElementById('undo-btn');
+
         this.setupEventListeners();
         this.loadLevel(this.currentLevelId);
     }
 
     setupEventListeners() {
+        // Canvas interactions
         this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
         this.canvas.addEventListener('mouseleave', () => this.handleCanvasMouseLeave());
+
+        // Touch support
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
             this.handleCanvasClick(touch);
         });
+
+        // Buttons
         this.undoBtn.addEventListener('click', () => this.undoMove());
         document.getElementById('reset-btn').addEventListener('click', () => this.resetLevel());
         this.hintBtn.addEventListener('click', () => this.showHint());
         this.nextBtn.addEventListener('click', () => this.goToNextLevel());
+
+        // Level navigation
         document.getElementById('prev-level').addEventListener('click', () => this.goToPrevLevel());
         document.getElementById('next-level').addEventListener('click', () => this.goToNextLevel());
+
+        // Game state changes
         this.game.onStateChange = () => this.render();
         this.game.onWin = () => this.handleWin();
+
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'r' || e.key === 'R') this.resetLevel();
             if (e.key === 'h' || e.key === 'H') this.showHint();
@@ -915,17 +1199,24 @@ class CircusApp {
     loadLevel(levelId) {
         const level = getLevelById(levelId);
         if (!level) return;
+
         this.currentLevelId = levelId;
         const graph = createGraphFromLevel(level);
+
         this.game.loadLevel(level, graph);
+
+        // Update UI
         this.levelNumEl.textContent = level.id;
         this.levelDisplayEl.textContent = level.id;
         this.totalLevelsEl.textContent = levels.length;
+
         this.circuitTypeEl.textContent = level.type === 'euler' ? 'Euler Circuit' : 'Hamilton Circuit';
         this.circuitTypeEl.classList.toggle('hamilton', level.type === 'hamilton');
+
         this.instructionsEl.textContent = level.type === 'euler'
             ? 'Traverse every edge exactly once and return to the start node.'
             : 'Visit every vertex exactly once and return to the start node.';
+
         this.hideMessage();
         this.render();
     }
@@ -934,7 +1225,9 @@ class CircusApp {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+
         const nodeId = this.renderer.getNodeAt(x, y, this.game.graph);
+
         if (nodeId !== null) {
             const success = this.game.selectNode(nodeId);
             if (!success && this.game.state.path.length > 0) {
@@ -947,8 +1240,11 @@ class CircusApp {
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+
         const nodeId = this.renderer.getNodeAt(x, y, this.game.graph);
         this.game.setHoveredNode(nodeId);
+
+        // Update cursor
         this.canvas.style.cursor = nodeId !== null ? 'pointer' : 'default';
     }
 
@@ -1008,7 +1304,9 @@ class CircusApp {
     }
 
     updateButtonStates() {
+        // Hint button disabled when puzzle is complete
         this.hintBtn.disabled = this.game.state.isWon;
+        // Next button enabled only when puzzle is won
         this.nextBtn.disabled = !this.game.state.isWon;
     }
 }
@@ -1017,6 +1315,7 @@ class CircusApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new CircusApp();
 });
+
     </script>
 </body>
 </html>
