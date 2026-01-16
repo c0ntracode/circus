@@ -22,14 +22,16 @@ A browser-based puzzle game focused on Hamilton and Euler circuits from discrete
 ## File Structure
 ```
 circus/
-├── index.html
+├── index.html              # Main page (requires server for ES6 modules)
+├── circus-standalone.html  # Single-file version (no server needed)
 ├── style.css
+├── build.py                # Generates standalone HTML from source
 ├── js/
-│   ├── main.js      # Entry point
-│   ├── graph.js     # Graph data structure
-│   ├── renderer.js  # Canvas rendering
-│   ├── game.js      # Game state/logic
-│   └── levels.js    # Puzzle definitions
+│   ├── main.js             # Entry point
+│   ├── graph.js            # Graph data structure
+│   ├── renderer.js         # Canvas rendering
+│   ├── game.js             # Game state/logic
+│   └── levels.js           # Puzzle definitions
 ```
 
 ## Current Status
@@ -43,13 +45,26 @@ circus/
 - [x] All nodes use letter labels (A, B, C, etc.)
 - [x] Added Undo Last button
 - [x] Hint button disables when circuit is complete
+- [x] Standalone single-file HTML version
+- [x] Build script to regenerate standalone from source
 - [ ] Random puzzle generator (see Future Features below)
 
 ## How to Run
-Open `index.html` in a browser. Due to ES6 modules, you may need a local server:
-- VS Code: Use "Live Server" extension
+
+**Standalone (easiest):** Open `circus-standalone.html` directly in a browser. No server needed.
+
+**Development:** Use `index.html` with a local server (ES6 modules require this):
 - Python: `python -m http.server 8000` then visit `localhost:8000`
+- VS Code: Use "Live Server" extension
 - Node: `npx serve`
+
+## Building
+
+After editing the source files, regenerate the standalone version:
+```
+python build.py
+```
+This bundles all JS/CSS into `circus-standalone.html`.
 
 ## Controls
 - **Click**: Select nodes to build path
