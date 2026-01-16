@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circus - Graph Circuit Puzzles</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    color: #fff;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    color: #888;
+    font-size: 1rem;
+    margin-top: 5px;
+}
+
+.game-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.level-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.level-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.circuit-type {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.circuit-type.hamilton {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.instructions {
+    color: #aaa;
+    font-size: 0.95rem;
+}
+
+.canvas-container {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 400px;
+    cursor: pointer;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.level-select {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.btn-small {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-small:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message {
+    text-align: center;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.message.show {
+    opacity: 1;
+}
+
+.message.success {
+    background: rgba(56, 239, 125, 0.2);
+    color: #38ef7d;
+}
+
+.message.error {
+    background: rgba(245, 87, 108, 0.2);
+    color: #f5576c;
+}
+
+.message.hint {
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+
+    #game-canvas {
+        height: 300px;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Circus</h1>
+            <p class="subtitle">Graph Circuit Puzzles</p>
+        </header>
+
+        <div class="game-info">
+            <div class="level-info">
+                <span class="level-label">Level <span id="level-num">1</span></span>
+                <span class="circuit-type" id="circuit-type">Euler Circuit</span>
+            </div>
+            <p class="instructions" id="instructions">Traverse every edge exactly once and return to the start node.</p>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="game-canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <button id="undo-btn" class="btn btn-secondary">Undo Last</button>
+            <button id="reset-btn" class="btn">Reset Path</button>
+            <button id="hint-btn" class="btn btn-secondary">Hint</button>
+            <button id="next-btn" class="btn btn-success" disabled>Next Level</button>
+        </div>
+
+        <div class="level-select">
+            <button id="prev-level" class="btn-small">&larr;</button>
+            <span>Level <span id="level-display">1</span> / <span id="total-levels">1</span></span>
+            <button id="next-level" class="btn-small">&rarr;</button>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+// ============ GRAPH ============
+class Graph {
+    constructor() {
+        this.nodes = new Map();
+        this.edges = [];
+        this.adjacency = new Map();
+    }
+
+    addNode(id, x, y, label = null) {
+        this.nodes.set(id, { x, y, label: label || id.toString() });
+        if (!this.adjacency.has(id)) {
+            this.adjacency.set(id, new Set());
+        }
+        return this;
+    }
+
+    addEdge(from, to) {
+        this.edges.push({ from, to });
+        this.adjacency.get(from).add(to);
+        this.adjacency.get(to).add(from);
+        return this;
+    }
+
+    getNeighbors(nodeId) {
+        return this.adjacency.get(nodeId) || new Set();
+    }
+
+    getDegree(nodeId) {
+        return this.getNeighbors(nodeId).size;
+    }
+
+    getNodeCount() {
+        return this.nodes.size;
+    }
+
+    getEdgeCount() {
+        return this.edges.length;
+    }
+
+    hasEulerCircuit() {
+        if (!this.isConnected()) return false;
+        for (const [nodeId] of this.nodes) {
+            if (this.getDegree(nodeId) % 2 !== 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    isConnected() {
+        if (this.nodes.size === 0) return true;
+        const visited = new Set();
+        const queue = [this.nodes.keys().next().value];
+        while (queue.length > 0) {
+            const current = queue.shift();
+            if (visited.has(current)) continue;
+            visited.add(current);
+            for (const neighbor of this.getNeighbors(current)) {
+                if (!visited.has(neighbor)) {
+                    queue.push(neighbor);
+                }
+            }
+        }
+        return visited.size === this.nodes.size;
+    }
+
+    isValidEulerCircuit(path) {
+        if (path.length !== this.edges.length + 1) return false;
+        if (path[0] !== path[path.length - 1]) return false;
+        const edgeUsage = new Map();
+        for (const edge of this.edges) {
+            const key = this.edgeKey(edge.from, edge.to);
+            edgeUsage.set(key, (edgeUsage.get(key) || 0) + 1);
+        }
+        for (let i = 0; i < path.length - 1; i++) {
+            const key = this.edgeKey(path[i], path[i + 1]);
+            const count = edgeUsage.get(key) || 0;
+            if (count <= 0) return false;
+            edgeUsage.set(key, count - 1);
+        }
+        for (const count of edgeUsage.values()) {
+            if (count !== 0) return false;
+        }
+        return true;
+    }
+
+    isValidHamiltonCircuit(path) {
+        if (path.length !== this.nodes.size + 1) return false;
+        if (path[0] !== path[path.length - 1]) return false;
+        const visited = new Set();
+        for (let i = 0; i < path.length - 1; i++) {
+            if (visited.has(path[i])) return false;
+            visited.add(path[i]);
+        }
+        if (visited.size !== this.nodes.size) return false;
+        for (let i = 0; i < path.length - 1; i++) {
+            if (!this.getNeighbors(path[i]).has(path[i + 1])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    edgeKey(a, b) {
+        return a < b ? `${a}-${b}` : `${b}-${a}`;
+    }
+
+    hasEdge(from, to) {
+        return this.getNeighbors(from).has(to);
+    }
+
+    getEdgesFrom(nodeId) {
+        return this.edges.filter(e => e.from === nodeId || e.to === nodeId);
+    }
+}
+
+function createGraphFromLevel(level) {
+    const graph = new Graph();
+    for (const node of level.nodes) {
+        graph.addNode(node.id, node.x, node.y, node.label);
+    }
+    for (const edge of level.edges) {
+        graph.addEdge(edge[0], edge[1]);
+    }
+    return graph;
+}
+
+// ============ LEVELS ============
+const levels = [
+    {
+        id: 1, name: "Triangle", type: "euler",
+        description: "A simple triangle - the easiest Euler circuit.",
+        nodes: [
+            { id: 0, x: 2, y: 0, label: "A" },
+            { id: 1, x: 0, y: 3, label: "B" },
+            { id: 2, x: 4, y: 3, label: "C" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 0]]
+    },
+    {
+        id: 2, name: "Square", type: "euler",
+        description: "A square has 4 vertices of degree 2.",
+        nodes: [
+            { id: 0, x: 0, y: 0, label: "A" },
+            { id: 1, x: 3, y: 0, label: "B" },
+            { id: 2, x: 3, y: 3, label: "C" },
+            { id: 3, x: 0, y: 3, label: "D" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 0]]
+    },
+    {
+        id: 3, name: "Bowtie", type: "euler",
+        description: "Two triangles sharing a vertex. The center has degree 4.",
+        nodes: [
+            { id: 0, x: 0, y: 1, label: "A" },
+            { id: 1, x: 0, y: 3, label: "B" },
+            { id: 2, x: 2, y: 2, label: "C" },
+            { id: 3, x: 4, y: 1, label: "D" },
+            { id: 4, x: 4, y: 3, label: "E" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 0], [2, 3], [3, 4], [4, 2]]
+    },
+    {
+        id: 4, name: "Crystal", type: "euler",
+        description: "A triangular prism with face diagonals. All vertices have degree 4.",
+        nodes: [
+            { id: 0, x: 1, y: 0, label: "A" },
+            { id: 1, x: 3, y: 0, label: "B" },
+            { id: 2, x: 2, y: 1.5, label: "C" },
+            { id: 3, x: 1, y: 3.5, label: "D" },
+            { id: 4, x: 3, y: 3.5, label: "E" },
+            { id: 5, x: 2, y: 2, label: "F" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5], [0, 4], [1, 5], [2, 3]]
+    },
+    {
+        id: 5, name: "Complete K5", type: "euler",
+        description: "Complete graph on 5 vertices. Every vertex has degree 4.",
+        nodes: [
+            { id: 0, x: 2, y: 0, label: "A" },
+            { id: 1, x: 4, y: 1.5, label: "B" },
+            { id: 2, x: 3.2, y: 3.5, label: "C" },
+            { id: 3, x: 0.8, y: 3.5, label: "D" },
+            { id: 4, x: 0, y: 1.5, label: "E" }
+        ],
+        edges: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
+    },
+    {
+        id: 6, name: "Simple Square", type: "hamilton",
+        description: "Visit every vertex exactly once and return home.",
+        nodes: [
+            { id: 0, x: 0, y: 0, label: "A" },
+            { id: 1, x: 3, y: 0, label: "B" },
+            { id: 2, x: 3, y: 3, label: "C" },
+            { id: 3, x: 0, y: 3, label: "D" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 0]]
+    },
+    {
+        id: 7, name: "Pentagon", type: "hamilton",
+        description: "A 5-vertex cycle - find the Hamilton circuit.",
+        nodes: [
+            { id: 0, x: 2, y: 0, label: "A" },
+            { id: 1, x: 4, y: 1.5, label: "B" },
+            { id: 2, x: 3.2, y: 3.5, label: "C" },
+            { id: 3, x: 0.8, y: 3.5, label: "D" },
+            { id: 4, x: 0, y: 1.5, label: "E" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]]
+    },
+    {
+        id: 8, name: "Petersen's Challenge", type: "hamilton",
+        description: "A graph with extra edges. Find the right path!",
+        nodes: [
+            { id: 0, x: 0, y: 0, label: "A" },
+            { id: 1, x: 3, y: 0, label: "B" },
+            { id: 2, x: 4, y: 2, label: "C" },
+            { id: 3, x: 1.5, y: 4, label: "D" },
+            { id: 4, x: -1, y: 2, label: "E" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [0, 2], [1, 3]]
+    },
+    {
+        id: 9, name: "Hexagon Plus", type: "hamilton",
+        description: "Six vertices with some diagonals. Multiple solutions exist!",
+        nodes: [
+            { id: 0, x: 1, y: 0, label: "A" },
+            { id: 1, x: 3, y: 0, label: "B" },
+            { id: 2, x: 4, y: 1.7, label: "C" },
+            { id: 3, x: 3, y: 3.4, label: "D" },
+            { id: 4, x: 1, y: 3.4, label: "E" },
+            { id: 5, x: 0, y: 1.7, label: "F" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [0, 3], [1, 4], [2, 5]]
+    },
+    {
+        id: 10, name: "The Cube", type: "hamilton",
+        description: "Vertices and edges of a cube. Find the Hamilton circuit.",
+        nodes: [
+            { id: 0, x: 0, y: 1, label: "A" },
+            { id: 1, x: 3, y: 1, label: "B" },
+            { id: 2, x: 3, y: 3.5, label: "C" },
+            { id: 3, x: 0, y: 3.5, label: "D" },
+            { id: 4, x: 1, y: 0, label: "E" },
+            { id: 5, x: 4, y: 0, label: "F" },
+            { id: 6, x: 4, y: 2.5, label: "G" },
+            { id: 7, x: 1, y: 2.5, label: "H" }
+        ],
+        edges: [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]
+    }
+];
+
+function getLevelById(id) {
+    return levels.find(l => l.id === id);
+}
+
+function getNextLevel(currentId) {
+    const idx = levels.findIndex(l => l.id === currentId);
+    if (idx >= 0 && idx < levels.length - 1) {
+        return levels[idx + 1];
+    }
+    return null;
+}
+
+function getPrevLevel(currentId) {
+    const idx = levels.findIndex(l => l.id === currentId);
+    if (idx > 0) {
+        return levels[idx - 1];
+    }
+    return null;
+}
+
+// ============ RENDERER ============
+class Renderer {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.scale = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.nodeRadius = 24;
+        this.colors = {
+            node: '#667eea',
+            nodeStroke: '#764ba2',
+            nodeHover: '#f093fb',
+            nodeStart: '#38ef7d',
+            nodeCurrent: '#f5576c',
+            edge: 'rgba(255, 255, 255, 0.3)',
+            edgeUsed: '#667eea',
+            edgeHover: 'rgba(255, 255, 255, 0.5)',
+            pathLine: '#f5576c',
+            text: '#fff'
+        };
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    resize() {
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.width = rect.width;
+        this.height = rect.height;
+    }
+
+    render(graph, gameState) {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        if (!graph) return;
+        this.calculateTransform(graph);
+        this.drawEdges(graph, gameState);
+        this.drawPath(graph, gameState);
+        this.drawNodes(graph, gameState);
+    }
+
+    calculateTransform(graph) {
+        if (graph.nodes.size === 0) return;
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        for (const [, node] of graph.nodes) {
+            minX = Math.min(minX, node.x);
+            maxX = Math.max(maxX, node.x);
+            minY = Math.min(minY, node.y);
+            maxY = Math.max(maxY, node.y);
+        }
+        const padding = 60;
+        const graphWidth = maxX - minX || 1;
+        const graphHeight = maxY - minY || 1;
+        const scaleX = (this.width - padding * 2) / graphWidth;
+        const scaleY = (this.height - padding * 2) / graphHeight;
+        this.scale = Math.min(scaleX, scaleY, 80);
+        this.offsetX = (this.width - graphWidth * this.scale) / 2 - minX * this.scale;
+        this.offsetY = (this.height - graphHeight * this.scale) / 2 - minY * this.scale;
+    }
+
+    transformPoint(x, y) {
+        return {
+            x: x * this.scale + this.offsetX,
+            y: y * this.scale + this.offsetY
+        };
+    }
+
+    drawEdges(graph, gameState) {
+        const ctx = this.ctx;
+        for (const edge of graph.edges) {
+            const fromNode = graph.nodes.get(edge.from);
+            const toNode = graph.nodes.get(edge.to);
+            const from = this.transformPoint(fromNode.x, fromNode.y);
+            const to = this.transformPoint(toNode.x, toNode.y);
+            const edgeKey = graph.edgeKey(edge.from, edge.to);
+            const usedCount = gameState.usedEdges.get(edgeKey) || 0;
+            const isHovered = gameState.hoveredEdge === edgeKey;
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            if (usedCount > 0) {
+                ctx.strokeStyle = this.colors.edgeUsed;
+                ctx.lineWidth = 4;
+            } else if (isHovered) {
+                ctx.strokeStyle = this.colors.edgeHover;
+                ctx.lineWidth = 3;
+            } else {
+                ctx.strokeStyle = this.colors.edge;
+                ctx.lineWidth = 2;
+            }
+            ctx.stroke();
+        }
+    }
+
+    drawPath(graph, gameState) {
+        if (gameState.path.length < 2) return;
+        const ctx = this.ctx;
+        ctx.beginPath();
+        ctx.strokeStyle = this.colors.pathLine;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        const firstNode = graph.nodes.get(gameState.path[0]);
+        const start = this.transformPoint(firstNode.x, firstNode.y);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < gameState.path.length; i++) {
+            const node = graph.nodes.get(gameState.path[i]);
+            const point = this.transformPoint(node.x, node.y);
+            ctx.lineTo(point.x, point.y);
+        }
+        ctx.stroke();
+    }
+
+    drawNodes(graph, gameState) {
+        const ctx = this.ctx;
+        for (const [nodeId, node] of graph.nodes) {
+            const pos = this.transformPoint(node.x, node.y);
+            const isStart = gameState.path.length > 0 && gameState.path[0] === nodeId;
+            const isCurrent = gameState.path.length > 0 && gameState.path[gameState.path.length - 1] === nodeId;
+            const isHovered = gameState.hoveredNode === nodeId;
+            const isValidMove = gameState.validMoves.has(nodeId);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, this.nodeRadius, 0, Math.PI * 2);
+            if (isStart && isCurrent && gameState.path.length > 1) {
+                ctx.fillStyle = '#38ef7d';
+            } else if (isCurrent) {
+                ctx.fillStyle = this.colors.nodeCurrent;
+            } else if (isStart) {
+                ctx.fillStyle = this.colors.nodeStart;
+            } else if (isHovered && isValidMove) {
+                ctx.fillStyle = this.colors.nodeHover;
+            } else {
+                ctx.fillStyle = this.colors.node;
+            }
+            ctx.fill();
+            ctx.strokeStyle = isValidMove && !isCurrent ? 'rgba(255,255,255,0.8)' : this.colors.nodeStroke;
+            ctx.lineWidth = isValidMove && !isCurrent ? 3 : 2;
+            ctx.stroke();
+            ctx.fillStyle = this.colors.text;
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.label, pos.x, pos.y);
+        }
+    }
+
+    getNodeAt(screenX, screenY, graph) {
+        for (const [nodeId, node] of graph.nodes) {
+            const pos = this.transformPoint(node.x, node.y);
+            const dx = screenX - pos.x;
+            const dy = screenY - pos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance <= this.nodeRadius + 5) {
+                return nodeId;
+            }
+        }
+        return null;
+    }
+}
+
+// ============ GAME ============
+class Game {
+    constructor() {
+        this.graph = null;
+        this.level = null;
+        this.state = this.createInitialState();
+        this.onStateChange = null;
+        this.onWin = null;
+    }
+
+    createInitialState() {
+        return {
+            path: [],
+            usedEdges: new Map(),
+            validMoves: new Set(),
+            hoveredNode: null,
+            hoveredEdge: null,
+            isComplete: false,
+            isWon: false
+        };
+    }
+
+    loadLevel(level, graph) {
+        this.level = level;
+        this.graph = graph;
+        this.reset();
+    }
+
+    reset() {
+        this.state = this.createInitialState();
+        for (const [nodeId] of this.graph.nodes) {
+            this.state.validMoves.add(nodeId);
+        }
+        this.notifyStateChange();
+    }
+
+    selectNode(nodeId) {
+        if (this.state.isWon) return false;
+        if (this.state.path.length === 0) {
+            this.state.path.push(nodeId);
+            this.updateValidMoves();
+            this.notifyStateChange();
+            return true;
+        }
+        if (!this.state.validMoves.has(nodeId)) {
+            return false;
+        }
+        const currentNode = this.state.path[this.state.path.length - 1];
+        this.state.path.push(nodeId);
+        const edgeKey = this.graph.edgeKey(currentNode, nodeId);
+        const currentCount = this.state.usedEdges.get(edgeKey) || 0;
+        this.state.usedEdges.set(edgeKey, currentCount + 1);
+        this.checkWinCondition();
+        this.updateValidMoves();
+        this.notifyStateChange();
+        return true;
+    }
+
+    undoMove() {
+        if (this.state.path.length <= 1) {
+            this.reset();
+            return;
+        }
+        const removedNode = this.state.path.pop();
+        const currentNode = this.state.path[this.state.path.length - 1];
+        const edgeKey = this.graph.edgeKey(currentNode, removedNode);
+        const currentCount = this.state.usedEdges.get(edgeKey) || 0;
+        if (currentCount <= 1) {
+            this.state.usedEdges.delete(edgeKey);
+        } else {
+            this.state.usedEdges.set(edgeKey, currentCount - 1);
+        }
+        this.state.isWon = false;
+        this.state.isComplete = false;
+        this.updateValidMoves();
+        this.notifyStateChange();
+    }
+
+    updateValidMoves() {
+        this.state.validMoves.clear();
+        if (this.state.path.length === 0) {
+            for (const [nodeId] of this.graph.nodes) {
+                this.state.validMoves.add(nodeId);
+            }
+            return;
+        }
+        const currentNode = this.state.path[this.state.path.length - 1];
+        const neighbors = this.graph.getNeighbors(currentNode);
+        for (const neighbor of neighbors) {
+            if (this.canTraverseEdge(currentNode, neighbor)) {
+                this.state.validMoves.add(neighbor);
+            }
+        }
+    }
+
+    canTraverseEdge(from, to) {
+        const edgeKey = this.graph.edgeKey(from, to);
+        const usedCount = this.state.usedEdges.get(edgeKey) || 0;
+        let totalCount = 0;
+        for (const edge of this.graph.edges) {
+            if (this.graph.edgeKey(edge.from, edge.to) === edgeKey) {
+                totalCount++;
+            }
+        }
+        if (this.level.type === 'euler') {
+            return usedCount < totalCount;
+        } else {
+            const startNode = this.state.path[0];
+            const visitedNodes = new Set(this.state.path);
+            if (to === startNode && visitedNodes.size === this.graph.nodes.size) {
+                return true;
+            }
+            return !visitedNodes.has(to);
+        }
+    }
+
+    checkWinCondition() {
+        if (this.state.path.length < 2) return;
+        const startNode = this.state.path[0];
+        const currentNode = this.state.path[this.state.path.length - 1];
+        if (currentNode !== startNode) return;
+        let isValid = false;
+        if (this.level.type === 'euler') {
+            isValid = this.graph.isValidEulerCircuit(this.state.path);
+        } else if (this.level.type === 'hamilton') {
+            isValid = this.graph.isValidHamiltonCircuit(this.state.path);
+        }
+        if (isValid) {
+            this.state.isComplete = true;
+            this.state.isWon = true;
+            this.state.validMoves.clear();
+            if (this.onWin) {
+                this.onWin();
+            }
+        }
+    }
+
+    getHint() {
+        if (this.state.path.length === 0) {
+            return "Click any node to start your path.";
+        }
+        if (this.state.validMoves.size === 0) {
+            return "No valid moves! Try resetting and taking a different path.";
+        }
+        if (this.level.type === 'euler') {
+            const remainingEdges = this.getRemainingEdgeCount();
+            if (remainingEdges === 1) {
+                return "One edge left! Return to start to complete the circuit.";
+            }
+            return `You have ${remainingEdges} edges left to traverse. Try to avoid getting stuck!`;
+        } else {
+            const visitedCount = new Set(this.state.path).size;
+            const totalNodes = this.graph.nodes.size;
+            const remaining = totalNodes - visitedCount;
+            if (remaining === 0) {
+                return "All nodes visited! Return to start to complete the circuit.";
+            }
+            return `Visit ${remaining} more node${remaining > 1 ? 's' : ''}, then return to start.`;
+        }
+    }
+
+    getRemainingEdgeCount() {
+        let total = this.graph.edges.length;
+        let used = 0;
+        for (const count of this.state.usedEdges.values()) {
+            used += count;
+        }
+        return total - used;
+    }
+
+    setHoveredNode(nodeId) {
+        this.state.hoveredNode = nodeId;
+        this.notifyStateChange();
+    }
+
+    notifyStateChange() {
+        if (this.onStateChange) {
+            this.onStateChange(this.state);
+        }
+    }
+}
+
+// ============ APP ============
+class CircusApp {
+    constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.renderer = new Renderer(this.canvas);
+        this.game = new Game();
+        this.currentLevelId = 1;
+        this.levelNumEl = document.getElementById('level-num');
+        this.circuitTypeEl = document.getElementById('circuit-type');
+        this.instructionsEl = document.getElementById('instructions');
+        this.messageEl = document.getElementById('message');
+        this.levelDisplayEl = document.getElementById('level-display');
+        this.totalLevelsEl = document.getElementById('total-levels');
+        this.nextBtn = document.getElementById('next-btn');
+        this.hintBtn = document.getElementById('hint-btn');
+        this.undoBtn = document.getElementById('undo-btn');
+        this.setupEventListeners();
+        this.loadLevel(this.currentLevelId);
+    }
+
+    setupEventListeners() {
+        this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
+        this.canvas.addEventListener('mouseleave', () => this.handleCanvasMouseLeave());
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            this.handleCanvasClick(touch);
+        });
+        this.undoBtn.addEventListener('click', () => this.undoMove());
+        document.getElementById('reset-btn').addEventListener('click', () => this.resetLevel());
+        this.hintBtn.addEventListener('click', () => this.showHint());
+        this.nextBtn.addEventListener('click', () => this.goToNextLevel());
+        document.getElementById('prev-level').addEventListener('click', () => this.goToPrevLevel());
+        document.getElementById('next-level').addEventListener('click', () => this.goToNextLevel());
+        this.game.onStateChange = () => this.render();
+        this.game.onWin = () => this.handleWin();
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') this.resetLevel();
+            if (e.key === 'h' || e.key === 'H') this.showHint();
+            if (e.key === 'z' && (e.ctrlKey || e.metaKey)) this.undoMove();
+            if (e.key === 'ArrowRight') this.goToNextLevel();
+            if (e.key === 'ArrowLeft') this.goToPrevLevel();
+        });
+    }
+
+    loadLevel(levelId) {
+        const level = getLevelById(levelId);
+        if (!level) return;
+        this.currentLevelId = levelId;
+        const graph = createGraphFromLevel(level);
+        this.game.loadLevel(level, graph);
+        this.levelNumEl.textContent = level.id;
+        this.levelDisplayEl.textContent = level.id;
+        this.totalLevelsEl.textContent = levels.length;
+        this.circuitTypeEl.textContent = level.type === 'euler' ? 'Euler Circuit' : 'Hamilton Circuit';
+        this.circuitTypeEl.classList.toggle('hamilton', level.type === 'hamilton');
+        this.instructionsEl.textContent = level.type === 'euler'
+            ? 'Traverse every edge exactly once and return to the start node.'
+            : 'Visit every vertex exactly once and return to the start node.';
+        this.hideMessage();
+        this.render();
+    }
+
+    handleCanvasClick(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const nodeId = this.renderer.getNodeAt(x, y, this.game.graph);
+        if (nodeId !== null) {
+            const success = this.game.selectNode(nodeId);
+            if (!success && this.game.state.path.length > 0) {
+                this.showMessage("Can't move there! Choose a highlighted node.", 'error');
+            }
+        }
+    }
+
+    handleCanvasMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const nodeId = this.renderer.getNodeAt(x, y, this.game.graph);
+        this.game.setHoveredNode(nodeId);
+        this.canvas.style.cursor = nodeId !== null ? 'pointer' : 'default';
+    }
+
+    handleCanvasMouseLeave() {
+        this.game.setHoveredNode(null);
+    }
+
+    handleWin() {
+        const level = getLevelById(this.currentLevelId);
+        this.showMessage(`Excellent! You completed the ${level.type === 'euler' ? 'Euler' : 'Hamilton'} circuit!`, 'success');
+    }
+
+    resetLevel() {
+        this.game.reset();
+        this.hideMessage();
+    }
+
+    undoMove() {
+        this.game.undoMove();
+        this.hideMessage();
+    }
+
+    showHint() {
+        if (this.game.state.isWon) return;
+        const hint = this.game.getHint();
+        this.showMessage(hint, 'hint');
+    }
+
+    goToNextLevel() {
+        const next = getNextLevel(this.currentLevelId);
+        if (next) {
+            this.loadLevel(next.id);
+        } else {
+            this.showMessage("You've completed all levels! More coming soon.", 'success');
+        }
+    }
+
+    goToPrevLevel() {
+        const prev = getPrevLevel(this.currentLevelId);
+        if (prev) {
+            this.loadLevel(prev.id);
+        }
+    }
+
+    showMessage(text, type = 'info') {
+        this.messageEl.textContent = text;
+        this.messageEl.className = `message show ${type}`;
+    }
+
+    hideMessage() {
+        this.messageEl.className = 'message';
+    }
+
+    render() {
+        this.renderer.render(this.game.graph, this.game.state);
+        this.updateButtonStates();
+    }
+
+    updateButtonStates() {
+        this.hintBtn.disabled = this.game.state.isWon;
+        this.nextBtn.disabled = !this.game.state.isWon;
+    }
+}
+
+// Start the app
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new CircusApp();
+});
+    </script>
+</body>
+</html>
