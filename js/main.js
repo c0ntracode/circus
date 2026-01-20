@@ -5,6 +5,7 @@ import { Graph, createGraphFromLevel } from './graph.js';
 import { Renderer } from './renderer.js';
 import { Game } from './game.js';
 import { levels, getLevelById, getNextLevel, getPrevLevel } from './levels.js';
+import { generateEulerPuzzle, generateHamiltonPuzzle } from './generator.js';
 
 class CircusApp {
     constructor() {
@@ -52,6 +53,10 @@ class CircusApp {
         document.getElementById('prev-level').addEventListener('click', () => this.goToPrevLevel());
         document.getElementById('next-level').addEventListener('click', () => this.goToNextLevel());
 
+        // Random puzzle generation
+        document.getElementById('random-euler-btn').addEventListener('click', () => this.loadRandomPuzzle('euler'));
+        document.getElementById('random-hamilton-btn').addEventListener('click', () => this.loadRandomPuzzle('hamilton'));
+
         // Game state changes
         this.game.onStateChange = () => this.render();
         this.game.onWin = () => this.handleWin();
@@ -79,6 +84,31 @@ class CircusApp {
         this.levelNumEl.textContent = level.id;
         this.levelDisplayEl.textContent = level.id;
         this.totalLevelsEl.textContent = levels.length;
+
+        this.circuitTypeEl.textContent = level.type === 'euler' ? 'Euler Circuit' : 'Hamilton Circuit';
+        this.circuitTypeEl.classList.toggle('hamilton', level.type === 'hamilton');
+
+        this.instructionsEl.textContent = level.type === 'euler'
+            ? 'Traverse every edge exactly once and return to the start node.'
+            : 'Visit every vertex exactly once and return to the start node.';
+
+        this.hideMessage();
+        this.render();
+    }
+
+    loadRandomPuzzle(type) {
+        const level = type === 'euler'
+            ? generateEulerPuzzle(6, 2)
+            : generateHamiltonPuzzle(6, 3);
+
+        this.currentLevelId = null; // Not a numbered level
+        const graph = createGraphFromLevel(level);
+
+        this.game.loadLevel(level, graph);
+
+        // Update UI
+        this.levelNumEl.textContent = '?';
+        this.levelDisplayEl.textContent = '?';
 
         this.circuitTypeEl.textContent = level.type === 'euler' ? 'Euler Circuit' : 'Hamilton Circuit';
         this.circuitTypeEl.classList.toggle('hamilton', level.type === 'hamilton');
@@ -123,8 +153,8 @@ class CircusApp {
     }
 
     handleWin() {
-        const level = getLevelById(this.currentLevelId);
-        this.showMessage(`Excellent! You completed the ${level.type === 'euler' ? 'Euler' : 'Hamilton'} circuit!`, 'success');
+        const type = this.game.level.type;
+        this.showMessage(`Excellent! You completed the ${type === 'euler' ? 'Euler' : 'Hamilton'} circuit!`, 'success');
     }
 
     resetLevel() {
@@ -144,6 +174,11 @@ class CircusApp {
     }
 
     goToNextLevel() {
+        // If on a random puzzle, go to level 1
+        if (this.currentLevelId === null) {
+            this.loadLevel(1);
+            return;
+        }
         const next = getNextLevel(this.currentLevelId);
         if (next) {
             this.loadLevel(next.id);
@@ -153,6 +188,11 @@ class CircusApp {
     }
 
     goToPrevLevel() {
+        // If on a random puzzle, go to level 1
+        if (this.currentLevelId === null) {
+            this.loadLevel(1);
+            return;
+        }
         const prev = getPrevLevel(this.currentLevelId);
         if (prev) {
             this.loadLevel(prev.id);

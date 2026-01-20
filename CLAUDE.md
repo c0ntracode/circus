@@ -28,10 +28,14 @@ circus/
 ├── build.py                # Generates standalone HTML from source
 ├── js/
 │   ├── main.js             # Entry point
-│   ├── graph.js            # Graph data structure
+│   ├── graph.js            # Graph data structure + circuit detection
 │   ├── renderer.js         # Canvas rendering
 │   ├── game.js             # Game state/logic
-│   └── levels.js           # Puzzle definitions
+│   ├── levels.js           # Puzzle definitions
+│   ├── validator.js        # Puzzle validation module
+│   ├── generator.js        # Random puzzle generation
+│   ├── validate-levels.js  # Test script for level validation
+│   └── test-generator.js   # Test script for generator
 ```
 
 ## Current Status
@@ -47,7 +51,9 @@ circus/
 - [x] Hint button disables when circuit is complete
 - [x] Standalone single-file HTML version
 - [x] Build script to regenerate standalone from source
-- [ ] Random puzzle generator (see Future Features below)
+- [x] Puzzle validator module
+- [x] Random puzzle generator with Euler/Hamilton buttons
+- [ ] User-designed puzzles (see Future Features below)
 
 ## How to Run
 
@@ -71,10 +77,23 @@ This bundles all JS/CSS into `circus-standalone.html`.
 - **Undo Last button**: Undo last move
 - **Reset Path button**: Start over on current level
 - **Hint button**: Get a hint (disabled when complete)
+- **Random Euler/Hamilton buttons**: Generate a random solvable puzzle
 - **R**: Reset current level
 - **H**: Show hint
 - **Ctrl+Z**: Undo last move
 - **Arrow keys**: Navigate levels
+
+## Testing
+
+Validate all starter levels are solvable:
+```
+node js/validate-levels.js
+```
+
+Test random puzzle generator (generates 40 random puzzles and validates them):
+```
+node js/test-generator.js
+```
 
 ## Level Design Rules
 
@@ -101,31 +120,62 @@ Before adding any level to `levels.js`, verify mathematically:
 - No build tools for simplicity
 - Desktop-first responsive design
 
+## Implemented Features
+
+### Puzzle Validator (`validator.js`)
+Verifies puzzles are solvable before presenting them to players.
+
+**API:**
+- `validateLevel(level)` → detailed result with errors/warnings
+- `validateAllLevels(levels)` → summary for all levels
+- `isLevelSolvable(level)` → quick boolean check
+- `printValidationReport(results)` → console output
+
+**Euler validation:** Checks all vertices have even degree and graph is connected.
+
+**Hamilton validation:** Backtracking search for graphs ≤12 nodes (NP-complete, so limited).
+
+### Random Puzzle Generator (`generator.js`)
+Generates random solvable puzzles with validator integration.
+
+**API:**
+- `generateHamiltonPuzzle(nodeCount, extraEdges)` → level definition
+- `generateEulerPuzzle(nodeCount, extraEdgePairs)` → level definition
+- `generatePuzzle(type, difficulty)` → level definition ('easy'/'medium'/'hard')
+
+**Hamilton generation:** Creates a cycle through all vertices (guaranteed solution), then adds random extra edges for difficulty.
+
+**Euler generation:** Starts with a base cycle, adds edges while maintaining even degree. Auto-fixes invalid puzzles by adding edges between odd-degree vertices.
+
+**Size constraints:** 4-12 nodes depending on difficulty.
+
+---
+
 ## Future Features
 
-### Random Puzzle Generator
-Add buttons to generate random solvable Euler and Hamilton circuits.
+### User-Designed Puzzles
+Allow players to create and share their own puzzles.
 
-**Hamilton circuit generation (simpler):**
-1. Create a cycle through all vertices (this IS the Hamilton circuit)
-2. Add random extra edges to increase difficulty
-3. The original cycle is always a valid solution
+**Editor features:**
+- Click to place nodes
+- Click and drag between nodes to create edges
+- Delete nodes/edges
+- Set puzzle type (Euler or Hamilton)
+- Validate button to check if puzzle is solvable
 
-**Euler circuit generation (more complex):**
-1. Every vertex must have even degree
-2. Approach: add edges in pairs to maintain even degree at each vertex
-3. Or: start with random cycles and merge them at shared vertices
-4. Must ensure graph stays connected
+**Validation:**
+- For Euler: verify all vertices have even degree and graph is connected
+- For Hamilton: harder to verify algorithmically (NP-complete), may need to brute-force small graphs or trust the user
 
-**Recommended size constraints:**
-- Minimum: 4 nodes (enough to be interesting)
-- Maximum: 12 nodes (desktop), 8 nodes (mobile)
-- Consider difficulty levels:
-  - Easy: 4-6 nodes
-  - Medium: 6-9 nodes
-  - Hard: 9-12 nodes
+**Sharing:**
+- Export puzzle as JSON or encoded URL parameter
+- Import puzzle from JSON/URL
+- Possible: copy-paste shareable code
 
 **UI additions needed:**
-- "Random Euler" button
-- "Random Hamilton" button
-- Possibly a difficulty/size selector
+- "Create Puzzle" button/mode
+- Node/edge placement tools
+- Delete tool
+- Puzzle type selector
+- Validate and Save buttons
+- Import/Export interface

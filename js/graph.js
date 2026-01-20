@@ -56,6 +56,47 @@ export class Graph {
     }
 
     /**
+     * Check if a Hamilton circuit exists using backtracking.
+     * NP-complete problem - only feasible for small graphs (≤12 nodes).
+     * @param {number} maxNodes - Maximum nodes to attempt (default 12)
+     * @returns {boolean} true if a Hamilton circuit exists
+     */
+    hasHamiltonCircuit(maxNodes = 12) {
+        if (this.nodes.size === 0) return false;
+        if (this.nodes.size === 1) return true; // Single node trivially has a circuit
+        if (this.nodes.size > maxNodes) {
+            console.warn(`Graph has ${this.nodes.size} nodes, exceeding limit of ${maxNodes}. Skipping Hamilton check.`);
+            return false;
+        }
+
+        const nodeIds = Array.from(this.nodes.keys());
+        const startNode = nodeIds[0];
+        const visited = new Set([startNode]);
+
+        const backtrack = (current, visited) => {
+            // If we've visited all nodes, check if we can return to start
+            if (visited.size === this.nodes.size) {
+                return this.hasEdge(current, startNode);
+            }
+
+            // Try each unvisited neighbor
+            for (const neighbor of this.getNeighbors(current)) {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    if (backtrack(neighbor, visited)) {
+                        return true;
+                    }
+                    visited.delete(neighbor);
+                }
+            }
+
+            return false;
+        };
+
+        return backtrack(startNode, visited);
+    }
+
+    /**
      * Check if graph is connected using BFS
      */
     isConnected() {

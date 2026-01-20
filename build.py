@@ -28,6 +28,8 @@ def build():
     css = read_file(root / 'style.css')
     graph_js = read_file(root / 'js' / 'graph.js')
     levels_js = read_file(root / 'js' / 'levels.js')
+    validator_js = read_file(root / 'js' / 'validator.js')
+    generator_js = read_file(root / 'js' / 'generator.js')
     renderer_js = read_file(root / 'js' / 'renderer.js')
     game_js = read_file(root / 'js' / 'game.js')
     main_js = read_file(root / 'js' / 'main.js')
@@ -35,6 +37,8 @@ def build():
     # Strip module syntax
     graph_js = strip_exports_imports(graph_js)
     levels_js = strip_exports_imports(levels_js)
+    validator_js = strip_exports_imports(validator_js)
+    generator_js = strip_exports_imports(generator_js)
     renderer_js = strip_exports_imports(renderer_js)
     game_js = strip_exports_imports(game_js)
     main_js = strip_exports_imports(main_js)
@@ -46,6 +50,12 @@ def build():
 
 // ============ LEVELS ============
 {levels_js.strip()}
+
+// ============ VALIDATOR ============
+{validator_js.strip()}
+
+// ============ GENERATOR ============
+{generator_js.strip()}
 
 // ============ RENDERER ============
 {renderer_js.strip()}
@@ -98,6 +108,12 @@ def build():
             <button id="prev-level" class="btn-small">&larr;</button>
             <span>Level <span id="level-display">1</span> / <span id="total-levels">1</span></span>
             <button id="next-level" class="btn-small">&rarr;</button>
+        </div>
+
+        <div class="random-controls">
+            <span class="random-label">Random:</span>
+            <button id="random-euler-btn" class="btn btn-random">Euler</button>
+            <button id="random-hamilton-btn" class="btn btn-random">Hamilton</button>
         </div>
 
         <div id="message" class="message"></div>

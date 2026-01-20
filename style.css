@@ -152,6 +152,29 @@ header h1 {
     background: rgba(255, 255, 255, 0.2);
 }
 
+.random-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.random-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.btn-random {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+.btn-random:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .message {
     text-align: center;
     padding: 15px;
