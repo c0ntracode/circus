@@ -40,6 +40,7 @@ Then visit `localhost:8000`.
 | Undo Last | Remove the last node from your path |
 | Reset Path | Start over on the current level |
 | Hint | Get help (disabled when circuit is complete) |
+| Random Euler / Hamilton | Generate a random solvable puzzle |
 | R | Reset current level |
 | H | Show hint |
 | Ctrl+Z | Undo last move |
@@ -62,10 +63,14 @@ circus/
 ├── style.css
 └── js/
     ├── main.js             # Entry point
-    ├── graph.js            # Graph data structure
+    ├── graph.js            # Graph data structure + circuit detection
     ├── renderer.js         # Canvas rendering
     ├── game.js             # Game state and logic
-    └── levels.js           # Puzzle definitions
+    ├── levels.js           # Puzzle definitions
+    ├── validator.js        # Puzzle validation
+    ├── generator.js        # Random puzzle generation
+    ├── validate-levels.js  # Test script for levels
+    └── test-generator.js   # Test script for generator
 ```
 
 ## Building
@@ -74,6 +79,20 @@ After editing the source files, regenerate the standalone version:
 
 ```bash
 python build.py
+```
+
+## Testing
+
+Validate all preset levels are solvable:
+
+```bash
+node js/validate-levels.js
+```
+
+Test the random puzzle generator:
+
+```bash
+node js/test-generator.js
 ```
 
 ## License
