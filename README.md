@@ -97,4 +97,4 @@ node js/test-generator.js
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -22,3 +22,6 @@ build/
 
 # Misc
 *.log
+
+# Project docs (local only)
+CLAUDE.md
